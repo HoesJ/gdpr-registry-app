@@ -10,7 +10,7 @@ from socket import error, inet_pton, AF_INET6
 from django.core.cache import caches
 from django.utils import six
 
-import ipware.ip2
+import ipware.ip
 
 from axes.conf import settings
 from axes.models import AccessAttempt
@@ -58,7 +58,7 @@ def get_client_ip(request):
     client_ip_attribute = 'axes_client_ip'
 
     if not hasattr(request, client_ip_attribute):
-        client_ip, _ = ipware.ip2.get_client_ip(
+        client_ip, _ = ipware.ip.get_client_ip(
             request,
             proxy_order=settings.AXES_PROXY_ORDER,
             proxy_count=settings.AXES_PROXY_COUNT,

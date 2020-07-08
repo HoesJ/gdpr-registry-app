@@ -37,7 +37,7 @@ except IOError:
 # See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -207,3 +207,6 @@ JET_INDEX_DASHBOARD = 'dashboard.IndexDashboard'
 
 LANGUAGE_COOKIE_NAME = 'lang'
 LANGUAGE_COOKIE_PATH = '/'
+
+# Personal configurations
+JET_SIDE_MENU_COMPACT = True
