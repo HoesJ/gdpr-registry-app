@@ -90,7 +90,7 @@ class Base(models.Model):
 
 class NameDesc(Base):
     name = models.CharField(unique=True,
-                            max_length=100,
+                            max_length=110,
                             verbose_name=_("Name"))
     description = models.TextField(verbose_name=_("Description"), blank=True)
 
@@ -145,7 +145,7 @@ class PDFDocument(NameDesc):
         super(PDFDocument, self).save(*args, **kwargs)
 
 class List(NameDesc):
-    classification = models.CharField(blank=True, max_length=100, verbose_name=_("Classification"),
+    classification = models.CharField(blank=True, max_length=120, verbose_name=_("Classification"),
                                       help_text=_("Insert a general classification for this entry (if any)"))
     article = models.PositiveIntegerField(null=True, blank=True,
                                           verbose_name=_("GDPR Article"),

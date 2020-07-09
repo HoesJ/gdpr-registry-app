@@ -10,3 +10,4 @@ audit/management/commands/__pycache__
 axes/management/__pycache__
 registry/__pycache__
 db.sqlite3
+.vscode
