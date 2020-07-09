@@ -6,3 +6,7 @@ audit/migrations
 axes/__pycache__
 axes/migrations
 __pycache__
+audit/management/commands/__pycache__
+axes/management/__pycache__
+registry/__pycache__
+db.sqlite3
