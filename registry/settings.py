@@ -25,6 +25,12 @@ try:
     DEBUG=bool(os.environ['DJANGO_DEBUG'])
     SECRET_KEY = os.environ['DJANGO_SECRET']
     ALLOWED_HOSTS = os.environ['DJANGO_ALLOWED_HOSTS'].split(" ")
+    MEDIA_ROOT_RELATIVE = bool(os.environ['DJANGO_MEDIA_ROOT_IS_RELATIVE'])
+    if MEDIA_ROOT_RELATIVE:
+        MEDIA_ROOT = os.path.join(BASE_DIR, os.environ['DJANGO_MEDIA_ROOT'])
+    else:
+        MEDIA_ROOT = os.environ['DJANGO_MEDIA_ROOT']
+
 except:
     import sys
     print("Environment variable not set or not specified in .env file")
@@ -140,7 +146,7 @@ LOCALE_PATHS = (
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-MEDIA_ROOT = os.path.join(BASE_DIR, 'uploaded_files')
+# MEDIA_ROOT = os.path.join(BASE_DIR, 'uploaded_files') see at start
 MEDIA_URL = '/media/'
 
 #JET_DEFAULT_THEME = 'light-green'
