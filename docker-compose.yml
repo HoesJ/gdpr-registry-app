@@ -1,0 +1,21 @@
+version: '3'
+
+services:
+	web:
+		build: .
+		ports:
+		- "8000:8080"
+		extra_hosts:
+		- "database:10.0.10.78"
+		environment:
+		- PORT: 8080
+
+
+
+# nginx?
+#  nginx:
+#    image: nginx:latest
+#    networks:
+#      - backend
+#    depends_on:
+#      - web

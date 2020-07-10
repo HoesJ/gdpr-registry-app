@@ -97,7 +97,7 @@ DATABASES = {
         'NAME': 'gdpr_registry_app',
         'USER': 'django',
         'PASSWORD': 'django',
-        'HOST': '127.0.0.1',
+        'HOST': 'database',
         'PORT': '5432',
     }
 }
