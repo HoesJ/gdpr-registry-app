@@ -15,6 +15,18 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# Get environmental variables
+try:
+    POSTGRES_USER=os.environ['POSTGRES_USER']
+    POSTGRES_PASSWORD=os.environ['POSTGRES_PASSWORD']
+    POSTGRES_DB=os.environ['POSTGRES_DB']
+    POSTGRES_HOST=os.environ['POSTGRES_HOST']
+    POSTGRES_PORT=os.environ['POSTGRES_PORT']
+    DEBUG=bool(os.environ['DJANGO_DEBUG'])
+except:
+    print("Environment variable not set or not specified in .env file")
+    sys.exit(1)
+
 # secret key automatic generation the first time this setting file is loaded
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_FILE = os.path.join(BASE_DIR, 'secret.txt')
@@ -36,8 +48,6 @@ except IOError:
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -94,11 +104,11 @@ WSGI_APPLICATION = 'registry.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'gdpr_registry_app',
-        'USER': 'django',
-        'PASSWORD': 'django',
-        'HOST': 'database',
-        'PORT': '5432',
+        'NAME': POSTGRES_DB,
+        'USER': POSTGRES_USER,
+        'PASSWORD': POSTGRES_PASSWORD,
+        'HOST': POSTGRES_HOST,
+        'PORT': POSTGRES_PORT,
     }
 }
 

@@ -8,5 +8,6 @@ COPY . /app
 
 RUN pip install -r requirements.txt
 
-CMD "./start-server.sh"
+CMD ["/bin/bash", "./start-server.sh"]
 
+# sudo docker run --env-file local.env -p 8000:8000 -i -t --name gdpr gdpr_registry_app:latest
