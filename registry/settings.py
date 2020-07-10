@@ -23,33 +23,12 @@ try:
     POSTGRES_HOST=os.environ['POSTGRES_HOST']
     POSTGRES_PORT=os.environ['POSTGRES_PORT']
     DEBUG=bool(os.environ['DJANGO_DEBUG'])
+    SECRET_KEY = os.environ['SECRET_KEY']
+    ALLOWED_HOSTS = os.environ['DJANGO_ALLOWED_HOSTS'].split(" ")
 except:
+    import sys
     print("Environment variable not set or not specified in .env file")
     sys.exit(1)
-
-# secret key automatic generation the first time this setting file is loaded
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_FILE = os.path.join(BASE_DIR, 'secret.txt')
-try:
-    with open(SECRET_FILE, 'r') as f:
-        SECRET_KEY = f.read().strip()
-except IOError:
-    try:
-        import random
-        SECRET_KEY = ''.join(
-            [random.SystemRandom().choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
-        with open(SECRET_FILE, 'w') as f:
-            f.write(SECRET_KEY)
-            f.close()
-    except IOError:
-        Exception('Please create a %s file with random characters \
-            to generate your secret key!' % SECRET_FILE)
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/2.0/howto/deployment/checklist/
-
-
-ALLOWED_HOSTS = ['*']
 
 # Application definition
 
