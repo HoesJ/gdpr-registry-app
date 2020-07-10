@@ -1,5 +1,7 @@
-FROM python:3
+FROM python:3.8.3-alpine
+
 ENV PYTHONBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE 1
 
 RUN mkdir /app
 WORKDIR /app
