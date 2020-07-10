@@ -23,7 +23,7 @@ try:
     POSTGRES_HOST=os.environ['POSTGRES_HOST']
     POSTGRES_PORT=os.environ['POSTGRES_PORT']
     DEBUG=bool(os.environ['DJANGO_DEBUG'])
-    SECRET_KEY = os.environ['SECRET_KEY']
+    SECRET_KEY = os.environ['DJANGO_SECRET']
     ALLOWED_HOSTS = os.environ['DJANGO_ALLOWED_HOSTS'].split(" ")
 except:
     import sys
