@@ -1,0 +1,6 @@
+apiVersion: v1
+appVersion: "1.0"
+description: "Change this description"
+name: gdpr-registry-app
+icon: https://rombit.be/wp-content/uploads/2019/09/logo.png
+version: 0.5.3

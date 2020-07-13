@@ -1,0 +1,21 @@
+{{- /* @formatter:off */ -}}
+{{- if .Values.prometheus.serviceMonitor.enabled -}}
+{{- $fullname := include "project.fullname" . -}}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Namespace }}-{{ $fullname }}-service-monitor
+  labels:
+    prometheus-cluster: prometheus2
+spec:
+  selector:
+    matchLabels:
+      app: {{ $fullname }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Release.Namespace }}
+  endpoints:
+    - port: http
+      path: {{ .Values.prometheus.serviceMonitor.path }}
+      interval: 30s
+{{- end -}}
