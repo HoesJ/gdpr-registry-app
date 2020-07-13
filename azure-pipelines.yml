@@ -1,0 +1,34 @@
+# Python package
+# Create and test a Python package on multiple Python versions.
+# Add steps that analyze code, save the dist with the build record, publish to a PyPI-compatible index, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/python
+
+name: "$(GitVersion.MajorMinorPatch).$(BuildID)"
+
+trigger:
+  - master
+  
+variables:
+  container_registry: 'rombit_dockerregistry'
+  container_repository: 'rombit-k8s-resource-scraper'
+  python_version: '3.7'
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: GitVersion@5
+  inputs:
+    runtime: 'core'
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '$(python_version)'
+  displayName: 'Use Python $(python_version)'
+- task: Docker@2
+  inputs:
+    containerRegistry: '$(container_registry)'
+    repository: '$(container_repository)'
+    command: 'buildAndPush'
+    Dockerfile: 'Dockerfile'
+    buildContext: 
+    tags: '$(Build.BuildNumber)'
