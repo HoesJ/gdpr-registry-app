@@ -18,12 +18,12 @@ image:
   # The image repository, in most of the case it is in the form of 
   # registry.romcore.cloud/<your-repo-name>
   # The prefix can be omitted if it is the default
-  repository: to-be-overridden
+  repository: registry.romcore.cloud/gdpr-registry-app
   # The image tag, the tag is optional and is preferably set by the .Chart.AppVersion. This version number can
   # be set during the packaging of the Helm chart using the --app-version flag.
   # tag: to-be-overridden
   # The container port
-  port: 8080
+  port: 8000
   # The http path to check the liveness, set it to null to remove it
   livenessPath: /
   # The name of the image pull secret
@@ -42,14 +42,14 @@ service:
 
 ingress:
   # Should enable ingress or not
-  enabled: false
+  enabled: true
   # Set true if you want to enable our standard google authentication
-  authEnabled: false
+  authEnabled: true
   # True only for production environment, otherwise false
   production: false
   # Optional value, with this value you can set a custom host subdomain. E.g. if your subdomain value is test123
   # the full hostname will result in (production) test123.production1.romcore.cloud
-  # subdomain: "test123"
+  subdomain: "gdpr"
   # Optional value, when not set the default value is project fullname plus default domain
   # host: ""
   # Ingress path, this can be a simple path or a regex to capture groups. If capture groups are provided you should also fill in the reqrite target correctly
@@ -106,3 +106,20 @@ prometheus:
 #   someValue: "aaaa"
 #   otherValue: "beee"
 #   setInPipelineOrSecret: to-be-overridden
+app:
+  # Database setup
+  postgresUser: django
+  postgresPassword: to-be-overridden
+  postgresDbName: gdpr_registry_app
+  postgresHost: 10.0.10.78
+  postgresPort: 5432
+
+  # Volumes for uploaded files
+  mediaRoot: uploaded_files
+  mediaRootIsRelative: 1
+
+  # Django setup
+  djangoAllowedHosts: '*'        # list of allowed host seperated by a single space
+  djangoDebug: 1
+  djangoSecret: to-be-overridden
+

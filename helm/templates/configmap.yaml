@@ -16,3 +16,12 @@ data:
   # This value is important for Java projects to avoid OOM Killed events of your pods
   # The value should be passed to your java start command of course...
   # JAVA_OPTS: "-XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Xmx{{ .Values.resources.limits.memory | replace "Mi" "m" }}"
+  POSTGRES_USER: {{ .Values.app.dbUser }}
+  POSTGRES_DB: {{ .Values.app.postgresDbName }}
+  POSTGRES_HOST: {{ .Values.app.postgresHost }}
+  POSTGRES_PORT: {{ .Values.app.postgresPort | quote }}
+  DJANGO_MEDIA_ROOT: {{ .Values.app.mediaRoot }}
+  DJANGO_MEDIA_ROOT_IS_RELATIVE: {{ .Values.app.mediaRootIsRelative | quote }}
+  DJANGO_ALLOWED_HOSTS: {{ .Values.app.djangoAllowedHosts | quote }}
+  DJANGO_DEBUG: {{ .Values.app.djangoDebug | quote }}
+  DJANGO_PORT: {{ .Values.image.port | quote }}
