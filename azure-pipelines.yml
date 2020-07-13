@@ -32,3 +32,14 @@ steps:
     Dockerfile: 'Dockerfile'
     buildContext: 
     tags: '$(Build.BuildNumber)'
+- task: HelmDeploy@0
+  inputs:
+    command: 'package'
+    chartPath: 'helm'
+    save: false
+    arguments: '--app-version $(Build.BuildNumber)'
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'helm'
+    publishLocation: 'Container'
