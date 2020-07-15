@@ -1,0 +1,51 @@
+{{/* @formatter:off */}}
+{{- $fullname := include "project.fullname" . -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullname }}
+  labels:
+{{ include "project.labels" . | indent 4 }}
+spec:
+  selector:
+    matchLabels:
+{{ include "project.selector" . | indent 6 }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      labels:
+{{ include "project.podlabels" . | indent 8 }}
+    spec:
+      imagePullSecrets:
+        - name: {{ default "docker-registry" .Values.imagePullSecret }}
+      containers:
+        - name: {{ include "project.name" . }}
+          image: "{{ required ".Values.image.repository is required" .Values.image.repository }}:{{ default .Chart.AppVersion .Values.image.tag }}"
+          imagePullPolicy: "IfNotPresent"
+          ports:
+            - name: http
+              containerPort: {{ .Values.image.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: {{ $fullname }}
+            - secretRef:
+                name: {{ $fullname }}
+{{- if .Values.image.livenessPath }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.image.livenessPath }}
+              port: http
+            initialDelaySeconds: {{ default 120 .Values.image.livenessInitialDelay }}
+            periodSeconds: {{ default 10 .Values.image.periodSeconds }}
+            failureThreshold: {{ default 5 .Values.image.failureThreshold }}
+          readinessProbe: 
+            httpGet:
+              path: {{ .Values.image.livenessPath }}
+              port: http
+            initialDelaySeconds: {{ default 10 .Values.image.readinessInitialDelay }}
+            periodSeconds: {{ default 10 .Values.image.periodSeconds }}
+            failureThreshold: {{ default 5 .Values.image.failureThreshold }}
+{{- end }}
+          resources:
+{{- toYaml .Values.resources | nindent 12 }}

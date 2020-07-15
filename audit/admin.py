@@ -93,14 +93,12 @@ class ListAdmin(BaseAdmin):
     search_fields = BaseAdmin.search_fields + add_fields
     list_display = BaseAdmin.list_display + add_fields
 
-
 class PDFDocumentAdmin(BaseAdmin):
     list_display = ('md5sum',) + BaseAdmin.list_display
 
-
 @admin.register(models.BusinessProcess)
 class BusinessProcessAdmin(BaseAdmin):
-    search_fields = BaseAdmin.search_fields + ('owner',)
+    search_fields = BaseAdmin.search_fields + ('project_manager',)
     list_display = BaseAdmin.list_display + ('owner_link', 'organization', 'activity_link')
 
     def organization(self, obj):
@@ -109,8 +107,8 @@ class BusinessProcessAdmin(BaseAdmin):
     organization.short_description = _("Organization")
 
     def owner_link(self, obj):
-        return admin_change_link(obj.owner, obj.owner)
-    owner_link.short_description = _("Business Owner")
+        return admin_change_link(obj.project_manager, obj.project_manager)
+    owner_link.short_description = _("Project Manager")
 
     def activity_link(self, obj):
         return self.admin_changelist_count(obj.activities)
@@ -169,7 +167,7 @@ class DataSubjectRightsAdmin(PDFDocumentAdmin):
 @admin.register(models.Data)
 class DataAdmin(BaseAdmin):
     search_fields = BaseAdmin.search_fields
-    list_display = BaseAdmin.list_display + ('processing_activities', 'category', 'risk', 'is_managed', 'has_breach_detection', 'has_breach_response', 'dpia_bool')
+    list_display = BaseAdmin.list_display + ('processing_activities', 'category', 'risk', 'is_managed', 'has_breach_detection', 'has_breach_response')
 
     def is_managed(self, instance):
         return bool(instance.management)
@@ -189,11 +187,6 @@ class DataAdmin(BaseAdmin):
     def processing_activities(self, obj):
         return self.admin_changelist_count(obj.processingactivity_set)
     processing_activities.short_description = _('Activities')
-
-    def dpia_bool(self, obj):
-        return bool(obj.dpia)
-    dpia_bool.boolean = True
-    dpia_bool.short_description = _("DPIA")
 
 
 @admin.register(models.ProcessingActivity)
@@ -224,8 +217,8 @@ class DataProtectionOfficerAdmin(UserAdmin):
     organizations.short_description = _("Organizations")
 
 
-@admin.register(models.BusinessOwner)
-class BusinessOwnerAdmin(UserAdmin):
+@admin.register(models.ProjectManager)
+class ProjectManagerAdmin(UserAdmin):
     list_display = UserAdmin.list_display + ('business',)
 
     def business(self, obj):
@@ -233,9 +226,9 @@ class BusinessOwnerAdmin(UserAdmin):
     business.short_description = _("Business Processes")
 
 
-@admin.register(models.ProcessorContract)
-class ProcessorContractAdmin(PDFDocumentAdmin):
-    list_display = PDFDocumentAdmin.list_display + ('processor',)
+@admin.register(models.DPA)
+class DPAAdmin(PDFDocumentAdmin):
+    list_display = PDFDocumentAdmin.list_display + ('controller',)
 
 
 class OrganizationAdmin(BaseAdmin):
@@ -245,10 +238,13 @@ class OrganizationAdmin(BaseAdmin):
 
 @admin.register(models.ThirdParty)
 class ThirdPartyAdmin(OrganizationAdmin):
-    add_fields = ('category',)
-    search_fields = OrganizationAdmin.search_fields + add_fields
-    list_display = OrganizationAdmin.list_display + add_fields + ('third_country_transfer',)
+    search_fields = OrganizationAdmin.search_fields
+    list_display = OrganizationAdmin.list_display
 
+@admin.register(models.DataTransfer)
+class DataTransferAdmin(BaseAdmin):
+    search_fields = BaseAdmin.search_fields + ('recipient_category', 'third_country_transfer', 'third_party')
+    list_display = BaseAdmin.list_display + ('recipient_category', 'third_country_transfer')
 
 @admin.register(models.YourOrganization)
 class YourOrganizationAdmin(OrganizationAdmin):

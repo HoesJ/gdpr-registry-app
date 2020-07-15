@@ -1,0 +1,25 @@
+{{- /* @formatter:off */ -}}
+{{- if .Values.prometheus.alertRules.enabled -}}
+{{- $fullname := include "project.fullname" . -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Release.Namespace }}-{{ $fullname }}-alert-rules
+  labels:
+    prometheus: prometheus2
+    role: prometheus-rulefiles
+spec:
+  groups:
+    - name: {{ .Release.Namespace }}-{{ $fullname }}.rules
+      rules:
+        - alert: {{ .Release.Namespace }}-{{ $fullname }}-DeploymentUnavailable
+          expr: max(kube_deployment_status_replicas_unavailable{deployment="{{ $fullname }}",namespace="{{ .Release.Namespace }}"}) by(deployment) > 0 or count(up{job="{{ $fullname }}",namespace="{{ .Release.Namespace }}"}) == 0
+          for: 5m
+          labels:
+            customer: {{ .Values.prometheus.alertRules.customer | quote }}
+            namespace: {{ .Release.Namespace }}
+            severity: {{ .Values.prometheus.severity | quote }}
+          annotations:
+            description: "Deployment {{ $fullname }} service has unavailable pods"
+            summary: "Unavailable pods for {{ $fullname }} service in {{ .Release.Namespace }}"
+{{- end -}}

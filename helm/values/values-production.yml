@@ -1,0 +1,6 @@
+# Staging values
+# Provide your staging variable overrides here, except the secrets...
+environment: production
+
+ingress:
+  production: true

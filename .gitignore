@@ -11,3 +11,5 @@ axes/management/__pycache__
 registry/__pycache__
 db.sqlite3
 .vscode
+.docker-compose.yml.swp
+.Dockerfile.swp

@@ -288,7 +288,7 @@ class PDFReport:
                                                                         'user_permissions',
                                                                         'id', 'is_staff',
                                                                         'is_active',
-                                                                        'date_joined'}))
+                                                                        'date_joined', 'is_superuser', 'last_login'}))
             self.elements.append(Table(data))
         else:
             self.elements.append(Paragraph(_("DPO has not been set."), self.style['Normal']))
@@ -298,15 +298,29 @@ class PDFReport:
         if self.org.business:
             for process in self.org.business.all():
                 self.doHeading(_("Process: %s (activities: %d)") % (process.name, process.activities.count()), 2)
-                self.elements.append(Table(get_data(process, exclude_fields={'activities', 'name'})))
+                self.elements.append(Table(get_data(process, exclude_fields={'activities', 'name', 'dpa', 'dpias'})))
+                
+                self.doHeading(_("%s > Data Processing Agreement") % (process.name), 3)
+                if process.dpa:
+                    self.elements.append(Table(get_data(process.dpa, exclude_fields={'controller', 'pdfdocument_ptr'})))
+                    self.doHeading(_("%s > Data Processing Agreement > Controller") % (process.name), 4)
+                    self.elements.append(Table(get_data(process.dpa.controller, exclude_fields={})))
+                else:
+                    self.elements.append(Paragraph(_("<em>No DPA found (!)</em>"), self.style['Normal']))
+                
+                if process.dpias.count():
+                    self.doHeading(_("%s > Data Protection Impact Assessment") % (process.name), 3)
+                    for dpia in process.dpias.all():
+                        self.elements.append(Table(get_data(dpia, exclude_fields={'pdfdocument_ptr'})))
+
                 for activity in process.activities.all():
                     self.doHeading(_("%s > %s (data audits: %d)") % (process.name, activity.name, activity.data_audit.count()), 3)
-                    self.elements.append(Table(get_data(activity, exclude_fields={'name', 'data_audit'})))
+                    self.elements.append(Table(get_data(activity, exclude_fields={'name', 'data_audit', 'data_transfers'})))
                     for data in activity.data_audit.all():
                         self.doHeading(_("%s > %s > %s") % (process.name, activity.name, data.name), 4)
                         self.elements.append(Table(get_data(data, exclude_fields={'name', 'subject_category',
                                                                                   'management', 'breach_detection',
-                                                                                  'breach_response', 'dpia'})))
+                                                                                  'breach_response'})))
                         self.doHeading(_("%s > %s > %s > Data Subject Categories") % (process.name, activity.name, data.name), 5)
                         for cat in data.subject_category.all():
                             self.elements.append(Table(get_data(cat, exclude_fields={})))
@@ -315,13 +329,7 @@ class PDFReport:
 
                         self.doHeading(_("%s > %s > %s > Data Management Policy") % (process.name, activity.name, data.name), 5)
                         if data.management:
-                            self.elements.append(Table(get_data(data.management, exclude_fields={'data_transfer', 'processor_contracts'})))
-                            self.doHeading(_("%s > %s > %s > Data Transfers (to third parties)") % (process.name, activity.name, data.name), 5)
-                            for contract in data.management.processor_contracts.all():
-                                self.elements.append(Table(get_data(contract, exclude_fields={'processor', 'pdfdocument_ptr'})))
-                                self.elements.append(Table(get_data(contract.processor, exclude_fields={})))
-                            if not data.management.processor_contracts.count():
-                                self.elements.append(Paragraph(_("<em>Sounds Good. No data transfers.</em>"), self.style['Normal']))
+                            self.elements.append(Table(get_data(data.management, exclude_fields={})))
                         else:
                             self.elements.append(Paragraph(_("<em>No Management Policy for the data (!)</em>"), self.style['Normal']))
 
@@ -337,14 +345,15 @@ class PDFReport:
                         else:
                             self.elements.append(
                                 Paragraph(_("<em>No Data Breach Response plan found (!)</em>"), self.style['Normal']))
+                    if activity.data_transfers.count():
+                        self.doHeading(_("%s > %s > Data Transfers (to third parties)") % (process.name, activity.name), 4)
+                    for transfer in activity.data_transfers.all():
+                        self.doHeading(_("%s > %s > %s") % (process.name, activity.name, transfer.name), 4)
+                        self.elements.append(Table(get_data(transfer.third_party, exclude_fields={})))
 
-                        self.doHeading(_("%s > %s > %s > Data Protection Impact Assessment") % (process.name, activity.name, data.name), 5)
-                        if data.dpia:
-                            self.elements.append(Table(get_data(data.dpia, exclude_fields={'pdfdocument_ptr'})))
-                        else:
-                            self.elements.append(
-                                Paragraph(_("<em>No Data Protection Impact Assessment found (!)</em>"), self.style['Normal']))
-
+                        self.doHeading(_("%s > %s > %s > Data categories") % (process.name, activity.name, transfer.name), 5)
+                        for category in transfer.data_category.all():
+                            self.elements.append(Table(get_data(category, exclude_fields={'special', 'url', 'article', 'classification', 'description'})))
         else:
             self.elements.append(Paragraph(_("<em>None available.</em>"), self.style['Normal']))
 

@@ -1,0 +1,13 @@
+# Test values
+# Some test values, you can thest them by running them with the command helm install <project name> helm --dry-run --values ./helm/<project name>/values/values-test.yml
+environment: test
+ingress:
+  enabled: true
+  authEnabled: true
+  appRoot: /app-root
+  cors: true
+  path: /v1/(.*)
+  rewriteTarget: /$1
+  subdomain: blabla
+  annotations:
+    nginx.ingress.kubernetes.io/canary: "true"
