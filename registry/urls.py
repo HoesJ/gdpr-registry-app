@@ -23,6 +23,7 @@ from audit import views
 
 urlpatterns = i18n_patterns(
     path('report/<int:org_pk>', views.report, name='report'),
+    url(r'^files/', include('db_file_storage.urls')),
     url(r'^jet/', include('jet.urls', 'jet')),  # Django JET URLS
     url(r'^jet/dashboard/', include('jet.dashboard.urls', 'jet-dashboard')),  # Django JET dashboard URLS
     path('admin/', admin.site.urls),

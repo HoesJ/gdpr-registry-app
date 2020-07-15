@@ -19,6 +19,7 @@ from django.utils.translation import gettext_lazy as _
 from django.core.exceptions import ValidationError
 from django.template.defaultfilters import truncatewords
 from django.utils.html import format_html
+from db_file_storage.model_utils import delete_file, delete_file_if_needed
 import hashlib
 import PyPDF2
 from collections import OrderedDict
@@ -110,6 +111,10 @@ class NameDesc(Base):
     class Meta:
         abstract = True
 
+class FileModel(models.Model):
+    bytes = models.BinaryField()
+    filename = models.CharField(max_length=255)
+    mimetype = models.CharField(max_length=50)
 
 class Organization(NameDesc):
     email = models.EmailField(verbose_name=_("Email"))
@@ -123,11 +128,8 @@ class Organization(NameDesc):
     class Meta:
         abstract = True
 
-def media_file_name(instance, filename):
-    return 'documents/{}.pdf'.format(instance.name)
-
 class PDFDocument(NameDesc):
-    document = models.FileField(verbose_name=_("Document File"), upload_to=media_file_name)
+    document = models.FileField(verbose_name=_("Document File"), upload_to='audit.FileModel/bytes/filename/mimetype')
     md5sum = models.CharField(blank=True, verbose_name=_("MD5Sum"), max_length=36)
 
     def clean(self): # PDF file validation
@@ -142,7 +144,12 @@ class PDFDocument(NameDesc):
             for chunk in self.document.chunks():
                 md5.update(chunk)
             self.md5sum = md5.hexdigest()
+        delete_file_if_needed(self, 'document')
         super(PDFDocument, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        super(PDFDocument, self).delete(*args, **kwargs)
+        delete_file(self, 'document')
 
 class List(NameDesc):
     classification = models.CharField(blank=True, max_length=120, verbose_name=_("Classification"),
@@ -232,10 +239,22 @@ class DataSubjectCategory(List):
         verbose_name = _("Data Subject Category")
         verbose_name_plural = _("Data Subject Categories")
 
-
 class ThirdParty(Organization):
-    category =  models.ForeignKey(RecipientCategory, on_delete=models.DO_NOTHING,
-                                  verbose_name=_("Category"),
+    class Meta:
+        verbose_name = _("Third-party Organization")
+        verbose_name_plural = _("Third-party Organizations")
+
+class DataTransfer(NameDesc):
+    third_party = models.ForeignKey(ThirdParty, blank=False, on_delete=models.DO_NOTHING,
+                                        verbose_name=_("Third Party"),
+                                        help_text=_("The party to which the data is transfered"))
+
+    data_category = models.ManyToManyField(DataCategory, blank=True,
+                                        verbose_name=_("Data Category"),
+                                        help_text=_("Type of data that is transferrred to the third party"))
+
+    recipient_category =  models.ForeignKey(RecipientCategory, on_delete=models.DO_NOTHING,
+                                  verbose_name=_("Recipient Category"),
                                   help_text=_("In the context of consent-base processing, to comply with Articles 13 and 14 "
                                   "of the GDPR, controllers will need to provide a full list of recipients or categories of recipients including processors."))
     third_country_transfer = models.ForeignKey(NatureOfTransferToThirdCountry, blank=True, null=True, on_delete=models.DO_NOTHING,
@@ -255,13 +274,12 @@ class ThirdParty(Organization):
         return hints
 
     def clean(self):
-        # TODO: add other validation, e.g., EU country/international
-        if self.third_country_transfer and (not (self.third_country or self.international)):
+        if self.third_country_transfer and (not (self.third_party.third_country or self.third_party.international)):
             raise ValidationError(_("This organization is not marked as third country or international. If you want to set the nature of transfer to third country/international organization, please first flag one of these fields."))
 
     class Meta:
-        verbose_name = _("Third-party Organization")
-        verbose_name_plural = _("Third-party Organizations")
+        verbose_name = _("Data Transfer")
+        verbose_name_plural = _("Data Transfers")
 
 class AuditUser(Base):
     user = models.OneToOneField(User, verbose_name=_("Registered User"), on_delete=models.CASCADE)
@@ -303,19 +321,19 @@ class DataSubjectRights(PDFDocument):
         verbose_name_plural = _("Data Subject Rights Documents")
 
 
-class ProcessorContract(PDFDocument):
-    processor = models.ForeignKey(ThirdParty, on_delete=models.DO_NOTHING,
-                                     verbose_name=_("Processor"),
-                                     help_text=_("Third-party organization with which the Contract has been signed."))
+class DPA(PDFDocument):
+    controller = models.ForeignKey(ThirdParty, on_delete=models.DO_NOTHING,
+                                     verbose_name=_("Controller"),
+                                     help_text=_("Third-party organization with which the DPA has been signed."))
 
     def get_hints(self):
         hints = super().get_hints()
-        hints.extend(self.processor.get_hints())
+        hints.extend(self.controller.get_hints())
         return hints
 
     class Meta:
-        verbose_name = _("Processor Contract")
-        verbose_name_plural = _("Processor Contracts")
+        verbose_name = _("Data Processing Agreement (DPA)")
+        verbose_name_plural = _("Data Processing Agreements (DPAs)")
 
 
 RISK_CHOICES = (
@@ -338,12 +356,6 @@ class CommonRiskHint:
         return hints
 
 class DataManagementPolicy(NameDesc, CommonRiskHint):
-    processor_contracts = models.ManyToManyField(ProcessorContract,
-                                    verbose_name=_("Data Processor Contracts"),
-                                    help_text=_(
-                                        "If the data is ACTUALLY transferred to OTHER organizations (e.g., Data Processors), "
-                                        "please upload the contract that regulates this data transfer, and relevant information about each third-party organization."),
-                                    blank=True)
     retention = models.IntegerField(null=True, blank=True, verbose_name=_("Retention period for the processed data, in Days"))
     risk_mitigation = models.TextField(blank=True, verbose_name=_("Risk Mitigation Measures"),
                                         help_text=_("Information about the risk mitigation measures related to the data processing, against Data Breaches."))
@@ -378,10 +390,6 @@ class DataManagementPolicy(NameDesc, CommonRiskHint):
             hints.append(Hint(obj=self,
                               text=_("Missing description of the notification procedures to data subjects for"),
                               hint_type='warning'))
-
-        for contract in self.processor_contracts.all():
-            hints.extend(contract.get_hints())
-
         return hints
 
     class Meta:
@@ -450,10 +458,6 @@ class Data(NameDesc):
     breach_response = models.ForeignKey(DataBreachResponse, null=True, blank=True,
                                         verbose_name=_("Incident Response Plan"),
                                    on_delete=models.DO_NOTHING,)
-    dpia = models.ForeignKey(DPIA, null=True, blank=True, on_delete=models.DO_NOTHING,
-                             verbose_name=_("Data protection Impact Assessment"),
-                             help_text=_("If the processing activity probably entails a high risk for the fundamental "
-                                         "rights and freedoms of data subjects, a DPIA must be completed (GDPR Article 35)."))
 
     def get_processing_activities(self):
         return ", ".join([a.name for a in self.processingactivity_set.all()])
@@ -479,16 +483,12 @@ class Data(NameDesc):
                 hints.append(Hint(obj=self, text=_("Mid/High inherent risk, but no data breach detection technology specified for"), hint_type='issue'))
             if not self.breach_response:
                 hints.append(Hint(obj=self, text=_("Mid/High inherent risk, but no data breach response plan specified for"), hint_type='issue'))
-            if self.risk >= 3 and (not self.dpia): # INHERENTLY HIGH RISK LEVEL
-                hints.append(Hint(obj=self, text=_("Mid/High inherent risk, but no Data Protection Impact Assessment specified for"), hint_type='issue'))
         elif self.risk == 0:
             hints.append(Hint(obj=self, text=_("Unknown inherent risk level for"), hint_type='issue'))
         if self.breach_detection:
             hints.extend(self.breach_detection.get_hints())
         if self.breach_response:
             hints.extend(self.breach_response.get_hints())
-        if self.dpia:
-            hints.extend(self.dpia.get_hints())
         return hints
 
     class Meta:
@@ -510,6 +510,9 @@ class ProcessingActivity(NameDesc):
     legal = models.ForeignKey(ProcessingLegal, on_delete=models.DO_NOTHING,
                               verbose_name=_("Legal Base for Processing"),
                               help_text=_("What is the Legal Base for Processing? It is mandatory!"))
+    data_transfers = models.ManyToManyField(DataTransfer, blank=True,
+                                            verbose_name=_("Data Transfers"),
+                                            help_text=_("Indicate whether there are data transfers to third party organizations."))
     technology = models.TextField(blank=True, verbose_name=_("Technology"), help_text=_("How the activity is performed. Description of the technologies, applications, and software employed in the processing activity."), null=True)
     alternate_activity = models.ForeignKey('self', null=True, blank=True, on_delete=models.DO_NOTHING,
                                            verbose_name=_("Alternate Activity"),
@@ -551,7 +554,7 @@ class ProcessingActivity(NameDesc):
 
     def clean(self):
         try:
-            if self.outsourcing.processor == self.get_business_process().get_organization():
+            if self.outsourcing.controller == self.get_business_process().get_organization():
                 raise ValidationError(
                     _("Outsourcing prefigures the assignment of the processing activity to another organization"))
         except ValidationError:
@@ -563,7 +566,7 @@ class ProcessingActivity(NameDesc):
         verbose_name = _("Processing Activity")
         verbose_name_plural = _("Processing Activities")
 
-class BusinessOwner(AuditUser):
+class ProjectManager(AuditUser):
 
     def get_business(self):
         return ", ".join([b.name for b in self.businessprocess_set.all()])
@@ -575,16 +578,25 @@ class BusinessOwner(AuditUser):
         return hints
 
     class Meta:
-        verbose_name = _("Business Owner")
-        verbose_name_plural = _("Business Owners")
+        verbose_name = _("Project Manager")
+        verbose_name_plural = _("Project Managers")
 
 class BusinessProcess(NameDesc):
-    owner = models.ForeignKey(BusinessOwner, null=True, blank=True, on_delete=models.DO_NOTHING,
-                              verbose_name=_("Process Owner"),
+    project_manager = models.ForeignKey(ProjectManager, null=True, blank=True, on_delete=models.DO_NOTHING,
+                              verbose_name=_("Project Manager"),
                               help_text=_("Please indicate who is responsible for and manages this business process."))
     activities = models.ManyToManyField(ProcessingActivity, blank=True,
                                         verbose_name=_("Processing Activities"),
                                         help_text=_("You should insert all processing activities that may handle personal data are part of the business process (e.g., Collection of Curriculum Vitae)"))
+
+    dpa = models.ForeignKey(DPA, blank=True, null=True, on_delete=models.DO_NOTHING,
+                                    verbose_name=_("Data Processing Agreement"),
+                                    help_text=_("Please upload the Data Processing Agreement with the controller for this project"))
+
+    dpias = models.ManyToManyField(DPIA, blank=True,
+                             verbose_name=_("Data protection Impact Assessment"),
+                             help_text=_("If the business process has processing activities which probably entail a high risk for the fundamental "
+                                         "rights and freedoms of data subjects, a DPIA must be completed (GDPR Article 35)."))
 
     def get_organization(self):
         try:
@@ -607,13 +619,20 @@ class BusinessProcess(NameDesc):
         hints = super().get_hints()
         if not self.get_organization():
             hints.append(Hint(obj=self, text=_("No organization associated to"), hint_type='error'))
-        if not self.owner:
-            hints.append(Hint(obj=self, text=_("No owner for"), hint_type='warning'))
+        if not self.project_manager:
+            hints.append(Hint(obj=self, text=_("No project manager for"), hint_type='warning'))
         if self.activities.count():
             for activity in self.activities.all():
                 hints.extend(activity.get_hints())
         else:
             hints.append(Hint(obj=self, text=_("Please specify at least one processing activity for"), hint_type='suggestion'))
+        
+        hints.extend(self.dpa.get_hints())
+
+        if self.dpias.count():
+            for dpia in self.dpias.all():
+                hints.extend(dpia.get_hints())
+
         return hints
 
     class Meta:

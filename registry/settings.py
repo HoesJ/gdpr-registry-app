@@ -25,11 +25,6 @@ try:
     DEBUG=bool(os.environ['DJANGO_DEBUG'])
     SECRET_KEY = os.environ['DJANGO_SECRET']
     ALLOWED_HOSTS = os.environ['DJANGO_ALLOWED_HOSTS'].split(" ")
-    MEDIA_ROOT_RELATIVE = bool(os.environ['DJANGO_MEDIA_ROOT_IS_RELATIVE'])
-    if MEDIA_ROOT_RELATIVE:
-        MEDIA_ROOT = os.path.join(BASE_DIR, os.environ['DJANGO_MEDIA_ROOT'])
-    else:
-        MEDIA_ROOT = os.environ['DJANGO_MEDIA_ROOT']
 
 except:
     import sys
@@ -128,7 +123,7 @@ LANGUAGE_CODE = 'en'
 
 TIME_ZONE = 'UTC'
 
-USE_I18N = True
+USE_I18N = False
 
 USE_L10N = True
 
@@ -147,6 +142,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # MEDIA_ROOT = os.path.join(BASE_DIR, 'uploaded_files') see at start
+DEFAULT_FILE_STORAGE = 'db_file_storage.storage.DatabaseFileStorage'
 MEDIA_URL = '/media/'
 
 #JET_DEFAULT_THEME = 'light-green'

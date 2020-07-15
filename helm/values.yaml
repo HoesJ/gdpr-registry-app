@@ -113,11 +113,7 @@ app:
   postgresDbName: gdpr_registry_app
   postgresHost: 10.0.10.78
   postgresPort: 5432
-
-  # Volumes for uploaded files
-  mediaRoot: uploaded_files
-  mediaRootIsRelative: 1
-
+  
   # Django setup
   djangoAllowedHosts: '*'        # list of allowed host seperated by a single space
   djangoDebug: 1
